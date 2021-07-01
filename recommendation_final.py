@@ -1,4 +1,11 @@
-from flask import Flask, request, jsonify
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Jul  1 14:12:35 2021
+
+@author: razzon
+"""
+
 import numpy as np
 import pandas as pd
 import seaborn as sb
@@ -17,11 +24,8 @@ import re
 from nltk.corpus import stopwords
 from sklearn.metrics.pairwise import linear_kernel
 from sklearn.feature_extraction.text import TfidfVectorizer
-from flask_cors import CORS, cross_origin
+import pickle
 
-app = Flask(__name__)
-CORS(app)
-app.config['CORS_HEADERS'] = 'Content-type'
 
 zomato_dataset = pd.read_csv("clean.csv")
 
@@ -62,8 +66,7 @@ def recommend(cost,cuisine,location, lko_rest = lko_rest):
     lko_rest1 = lko_rest1.reset_index()
 
     if lko_rest1.empty: 
-        df = pd.DataFrame()
-        return df
+        return None
         
     else:
         
@@ -92,32 +95,16 @@ def recommend(cost,cuisine,location, lko_rest = lko_rest):
         rest_sugg = final
         
         rest_list1 = rest_sugg.copy().loc[:,['name','cuisines','Mean Rating', 'cost','location']]
- 
+        # rest_list1.drop_duplicates(subset='name', keep='last', inplace=True)
         rest_list = pd.DataFrame(rest_list1).sort_values('Mean Rating', ascending=False)
         rest_list = rest_list.reset_index()
         rest_list = rest_list.rename(columns={'index': 'res_id'})
         rest_list.drop('res_id', axis=1, inplace=True)
-
-        return rest_list
-
-
-@app.route('/recommendation', methods=['POST'])
-# @cross_origin()
-def recommendation():
-    if request.method == 'POST':
-        request_data = request.get_json()
-        cost = int(request_data["gtePrice"])
-        cuisine = request_data["foodName"].lower()
-        location = request_data["location"].lower()
-
-        res = recommend(cost, cuisine,location)
-
-        if(res.empty):
-            return jsonify({"status": "Fail"})
-        else:
-            res_json = res.to_json(orient="records")
-            return res_json
-
-
-if __name__ == "__main__":
-    app.run(debug=True)
+        rest_list = rest_list.T
+        rest_list = rest_list
+        ans = rest_list.to_dict()
+        res = [value for value in ans.values()]
+        return res
+       
+    
+recommend(600,'pizza','banashankari')
